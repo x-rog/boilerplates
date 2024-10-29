@@ -29,7 +29,7 @@
         clone: "{{ vm_template_id }}"
         memory: "{{ vm_memory }}"
         cores: "{{ vm_cores }}"
-        disk_size: "{{ vm_disk_size }}"
+        scsi0: "local-lvm:{{ vm_disk_size }}"
         net0: "virtio,bridge=vmbr0"
         pool: "production_vms"
       loop: "{{ query('sequence', 'start=' + vm_id_start|string + ' count=' + num_vms|string) | map('int') | list }}"
