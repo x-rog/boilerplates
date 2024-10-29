@@ -1,56 +1,66 @@
 ---
-- hosts: all
-  become: yes
+- name: Install Kubernetes prerequisites on Ubuntu
+  hosts: all
+  become: true
+  vars:
+    kubernetes_version: "1.28.0-00"  # Remplace par la version souhaitée
+
   tasks:
-   - name: create Docker config directory
-     file: path=/etc/docker state=directory
+    - name: Update and install prerequisites
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - apt-transport-https
+        - curl
+        - gnupg
+        - software-properties-common
 
-   - name: changing Docker to systemd driver
-     copy:
-      dest: "/etc/docker/daemon.json"
-      content: |
-        {
-        "exec-opts": ["native.cgroupdriver=systemd"]
-        }
+    - name: Create directory for Kubernetes keyring
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
 
-   - name: install Docker
-     apt:
-       name: docker.io
-       state: present
-       update_cache: true
+    - name: Download Kubernetes signing key
+      ansible.builtin.command:
+        cmd: "curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg"
+      args:
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
-   - name: install APT Transport HTTPS
-     apt:
-       name: apt-transport-https
-       state: present
+    - name: Add Kubernetes APT repository
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /"
+        state: present
+        filename: 'kubernetes'
 
-   - name: add Kubernetes apt-key
-     apt_key:
-       url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-       state: present
+    - name: Update APT cache after adding Kubernetes repo
+      apt:
+        update_cache: yes
 
-   - name: Add Kubernetes' APT repository securely
-     apt_repository:
-       repo: "deb [trusted=yes] https://apt.kubernetes.io/ kubernetes-xenial main"
-       state: present
-       filename: 'kubernetes'
+    - name: Install Kubernetes components (kubeadm, kubelet, kubectl)
+      apt:
+        name:
+          - kubeadm={{ kubernetes_version }}
+          - kubelet={{ kubernetes_version }}
+          - kubectl={{ kubernetes_version }}
+        state: present
+      notify:
+        - Enable and start kubelet service
 
-   - name: install kubelet
-     apt:
-       name: kubelet=1.22.4-00
-       state: present
-       update_cache: true
+    - name: Hold Kubernetes packages at current version
+      apt:
+        name:
+          - kubeadm
+          - kubelet
+          - kubectl
+        state: present
+        mark: hold
 
-   - name: install kubeadm
-     apt:
-       name: kubeadm=1.22.4-00
-       state: present
-
-- hosts: control_plane
-  become: yes
-  tasks:
-   - name: install kubectl
-     apt:
-       name: kubectl=1.22.4-00
-       state: present
-       force: yes
+  handlers:
+    - name: Enable and start kubelet service
+      systemd:
+        name: kubelet
+        enabled: true
+        state: started
