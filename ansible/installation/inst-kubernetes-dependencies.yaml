@@ -24,11 +24,16 @@
         mode: '0755'
 
     - name: Download Kubernetes signing key
-      ansible.builtin.command:
-        cmd: "curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg"
+      get_url:
+        url: https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key
+        dest: /tmp/kubernetes-release.key
+        mode: '0644'
+    
+    - name: Convert Kubernetes signing key to .gpg format
+      command: gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/kubernetes-release.key
       args:
         creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-
+    
     - name: Add Kubernetes APT repository
       apt_repository:
         repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /"
