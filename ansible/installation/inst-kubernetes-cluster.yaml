@@ -126,7 +126,7 @@
               nginx.ingress.kubernetes.io/rewrite-target: /
           spec:
             rules:
-              - host: "lens.your-domain.com"
+              - host: "lens.macloudconnect.com"
                 http:
                   paths:
                     - path: /
@@ -136,6 +136,7 @@
                           name: lens
                           port:
                             number: 80
+      owner: "{{ ansible_user }}"
       mode: '0644'
 
     - name: Apply Lens Ingress resource
