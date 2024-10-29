@@ -7,36 +7,9 @@
       apt:
         update_cache: yes
 
-    - name: Installer les dépendances nécessaires
+    - name: Installer Docker (docker.io)
       apt:
-        name: 
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
-        state: present
-
-    - name: Ajouter la clé GPG officielle de Docker
-      apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
-
-    - name: Mettre à jour le cache des paquets
-      apt:
-        update_cache: yes
-
-    - name: Ajouter le dépôt Docker
-      apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu/dists/noble/stable"
-        state: present
-
-
-    - name: Installer Docker
-      apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
+        name: docker.io
         state: present
 
     - name: Activer et démarrer Docker
