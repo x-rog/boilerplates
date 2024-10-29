@@ -35,4 +35,5 @@
           - docker-buildx-plugin
           - docker-scan-plugin
           - docker-compose-plugin
+        state: latest
         update_cache: true
