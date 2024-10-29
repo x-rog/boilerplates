@@ -24,21 +24,20 @@
         api_password: "{{ proxmox_password }}"
         validate_certs: false
         node: "{{ inventory_hostname }}"
-        vmid: "{{ item.id }}"
-        name: "{{ item.name }}"
+        vmid: "{{ vm_id }}"
+        name: "{{ vm_name }}"
         clone: "{{ vm_template_id }}"
         memory: "{{ vm_memory }}"
         cores: "{{ vm_cores }}"
         disk_size: "{{ vm_disk_size }}"
-        net0: "virtio,bridge=vmbr0"         # Réseau virtuel de la VM
-        pool: "production_vms"              # Pool de ressources cible (à adapter selon vos besoins)
+        net0: "virtio,bridge=vmbr0"
+        pool: "production_vms"
       loop: "{{ query('sequence', 'start=' + vm_id_start|string + ' count=' + num_vms|string) | map('int') | list }}"
       loop_control:
-        index_var: vm_index
+        loop_var: vm_item
       vars:
-        item:
-          id: "{{ vm_id_start + vm_index }}"
-          name: "auto-deployed-vm-{{ vm_id_start + vm_index }}"
+        vm_id: "{{ vm_id_start + vm_item }}"
+        vm_name: "auto-deployed-vm-{{ vm_id_start + vm_item }}"
 
     - name: Start the newly cloned VMs
       community.general.proxmox_kvm:
