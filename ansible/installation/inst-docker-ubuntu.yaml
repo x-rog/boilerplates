@@ -1,42 +1,61 @@
 ---
-- name: Installer Docker et Docker Compose
-  hosts: all
+- hosts: all
   become: true
-  tasks:
-    - name: Mettre à jour le cache APT
-      apt:
-        update_cache: yes
+  vars:
+    container_count: 4
+    default_container_name: docker
+    default_container_image: ubuntu
+    default_container_command: sleep 1d
 
-    - name: Installer Docker (docker.io)
+  tasks:
+    - name: Install aptitude
       apt:
-        name: docker.io
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
         state: present
 
-    - name: Activer et démarrer Docker
-      systemd:
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu noble stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    - name: Install Docker Module for Python
+      pip:
         name: docker
-        enabled: yes
-        state: started
 
-    - name: Ajouter l'utilisateur actuel au groupe docker
-      user:
-        name: "{{ ansible_user }}"
-        groups: docker
-        append: yes
+    - name: Pull default Docker image
+      community.docker.docker_image:
+        name: "{{ default_container_image }}"
+        source: pull
 
-    - name: Télécharger Docker Compose
-      get_url:
-        url: "https://github.com/docker/compose/releases/download/v2.0.0/docker-compose-{{ ansible_system | lower }}-{{ ansible_architecture }}"
-        dest: /usr/local/bin/docker-compose
-        mode: '0755'
-
-    - name: Vérifier l'installation de Docker et Docker Compose
-      shell: |
-        docker --version
-        docker-compose --version
-      register: docker_check
-      ignore_errors: yes
-
-    - name: Afficher les résultats de l'installation
-      debug:
-        var: docker_check.stdout
+    - name: Create default containers
+      community.docker.docker_container:
+        name: "{{ default_container_name }}{{ item }}"
+        image: "{{ default_container_image }}"
+        command: "{{ default_container_command }}"
+        state: present
+      with_sequence: count={{ container_count }}
