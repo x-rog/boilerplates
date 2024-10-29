@@ -1,5 +1,5 @@
 ---
-- name: Install Docker and Docker Compose on Ubuntu
+- name: Install Docker and Docker Compose on Ubuntu via apt
   hosts: all
   become: true
   tasks:
@@ -28,24 +28,29 @@
       apt:
         update_cache: yes
 
-    - name: Install Docker
+    - name: Install Docker and Docker Compose
       apt:
-        name: docker-ce
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
         state: present
-
-    - name: Download Docker Compose binary
-      get_url:
-        url: https://github.com/docker/compose/releases/download/v2.0.0/docker-compose-{{ ansible_system | lower }}-{{ ansible_architecture }}
-        dest: /usr/local/bin/docker-compose
-        mode: '0755'
-
-    - name: Verify Docker Compose installation
-      command: docker-compose --version
-      register: docker_compose_version
-      changed_when: false
 
     - name: Enable and start Docker service
       systemd:
         name: docker
         enabled: true
         state: started
+
+    - name: Verify Docker and Docker Compose installation
+      shell: |
+        docker --version
+        docker compose version
+      register: docker_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Display Docker and Docker Compose version
+      debug:
+        var: docker_version.stdout_lines
