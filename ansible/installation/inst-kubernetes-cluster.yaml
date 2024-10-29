@@ -1,0 +1,144 @@
+---
+- name: Set up Kubernetes cluster with Ingress and Lens on Ubuntu
+  hosts: all
+  become: true
+  vars:
+    kubernetes_version: "1.24.0-00"
+    nginx_ingress_version: "4.0.6"
+
+  tasks:
+    - name: Update and install prerequisites
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - apt-transport-https
+        - curl
+        - gnupg
+        - software-properties-common
+
+    - name: Add Kubernetes apt key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Add Kubernetes repository
+      apt_repository:
+        repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+        state: present
+
+    - name: Install Kubernetes components (kubeadm, kubelet, kubectl)
+      apt:
+        name:
+          - kubeadm={{ kubernetes_version }}
+          - kubelet={{ kubernetes_version }}
+          - kubectl={{ kubernetes_version }}
+        state: present
+      notify:
+        - Enable and start kubelet service
+
+    - name: Hold Kubernetes packages at current version
+      apt:
+        name:
+          - kubeadm
+          - kubelet
+          - kubectl
+        state: present
+        mark: hold
+
+  handlers:
+    - name: Enable and start kubelet service
+      systemd:
+        name: kubelet
+        enabled: true
+        state: started
+
+- name: Initialize Kubernetes master
+  hosts: master
+  become: true
+  tasks:
+    - name: Initialize the Kubernetes cluster
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      register: kubeadm_init_output
+      changed_when: "'This node has joined the cluster' not in kubeadm_init_output.stdout"
+
+    - name: Create .kube directory
+      file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+        owner: "{{ ansible_user }}"
+        mode: '0755'
+
+    - name: Copy kubeconfig to user's kube directory
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        remote_src: yes
+        owner: "{{ ansible_user }}"
+        mode: '0644'
+
+    - name: Deploy Flannel network
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+      environment:
+        KUBECONFIG: "/home/{{ ansible_user }}/.kube/config"
+
+    - name: Display join command for worker nodes
+      debug:
+        msg: "{{ kubeadm_init_output.stdout | regex_search('kubeadm join .+', '\\n') }}"
+
+- name: Join worker nodes to the cluster
+  hosts: workers
+  become: true
+  tasks:
+    - name: Run kubeadm join
+      command: "{{ hostvars['master']['kubeadm_init_output']['stdout'] | regex_search('kubeadm join .+', '\\n') }}"
+      when: "'kubeadm join' in hostvars['master']['kubeadm_init_output']['stdout']"
+
+- name: Set up NGINX Ingress Controller
+  hosts: master
+  become: true
+  tasks:
+    - name: Install NGINX Ingress Controller
+      command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-{{ nginx_ingress_version }}/deploy/static/provider/cloud/deploy.yaml
+      environment:
+        KUBECONFIG: "/home/{{ ansible_user }}/.kube/config"
+
+- name: Deploy Lens as Kubernetes dashboard with Ingress
+  hosts: master
+  become: true
+  tasks:
+    - name: Deploy Lens Kubernetes dashboard
+      command: kubectl apply -f https://raw.githubusercontent.com/lensapp/lens/master/k8s.yaml
+      environment:
+        KUBECONFIG: "/home/{{ ansible_user }}/.kube/config"
+
+    - name: Create Ingress resource for Lens dashboard
+      copy:
+        dest: "/home/{{ ansible_user }}/lens-ingress.yaml"
+        content: |
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: lens-dashboard
+            namespace: kube-system
+            annotations:
+              nginx.ingress.kubernetes.io/rewrite-target: /
+          spec:
+            rules:
+              - host: "lens.your-domain.com"
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: lens
+                          port:
+                            number: 80
+      mode: '0644'
+
+    - name: Apply Lens Ingress resource
+      command: kubectl apply -f /home/{{ ansible_user }}/lens-ingress.yaml
+      environment:
+        KUBECONFIG: "/home/{{ ansible_user }}/.kube/config"
