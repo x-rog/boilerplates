@@ -52,7 +52,6 @@
       ansible.builtin.apt:
         name: "{{ item }}"
         state: present
-        groups: "wheel"
         update_cache: true
       loop:
         - docker-ce
