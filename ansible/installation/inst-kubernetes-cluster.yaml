@@ -24,7 +24,7 @@
 
     - name: Add Kubernetes repository
       apt_repository:
-        repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+        repo: "deb http://apt.kubernetes.io/ kubernetes-{{ ansible_distribution_release }} main"
         state: present
 
     - name: Update APT cache after adding Kubernetes repo
