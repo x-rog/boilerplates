@@ -27,6 +27,10 @@
         repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
         state: present
 
+    - name: Update APT cache after adding Kubernetes repo
+      apt:
+        update_cache: yes
+
     - name: Install Kubernetes components (kubeadm, kubelet, kubectl)
       apt:
         name:
