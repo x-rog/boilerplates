@@ -27,7 +27,7 @@
 
     - name: Ajouter le dépôt Docker
       apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu/dists {{ ansible_distribution_release | default('noble') }} stable"
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu/dists/noble/stable"
         state: present
 
 
