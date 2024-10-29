@@ -9,7 +9,7 @@
     proxmox_user: "root@pam"                # Remplacez par votre utilisateur Proxmox
     proxmox_password: "Mc/*8956"            # Remplacez par votre mot de passe Proxmox
     vm_id_start: 500                        # L'ID de la première VM créée
-    num_vms: 3                              # Nombre de VMs à créer
+    num_vms: 1                              # Nombre de VMs à créer
     vm_template_id: 901                     # ID du template
     template_name: "ubuntu-server-noble"    # Nom du template
     vm_memory: 2048                         # Taille de la mémoire en Mo
