@@ -23,7 +23,7 @@
 
     - name: Ajouter le dépôt Docker
       apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu jimmy stable"
         state: present
 
     - name: Installer Docker
