@@ -29,12 +29,11 @@
        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
        state: present
 
-   - name: Add Kubernetes' APT repository
+   - name: Add Kubernetes' APT repository securely
      apt_repository:
-       repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+       repo: "deb [trusted=yes] https://apt.kubernetes.io/ kubernetes-xenial main"
        state: present
        filename: 'kubernetes'
-       update_cache: yes
 
    - name: install kubelet
      apt:
