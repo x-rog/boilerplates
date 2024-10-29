@@ -5,7 +5,7 @@
   become: true
 
   vars:
-    proxmox_host: "your_proxmox_host"       # Remplacez par l'IP ou le FQDN de votre Proxmox
+    proxmox_host: pve-1                     # Remplacez par l'IP ou le FQDN de votre Proxmox
     proxmox_user: "root@pam"                # Remplacez par votre utilisateur Proxmox
     proxmox_password: "Mc/*8956"            # Remplacez par votre mot de passe Proxmox
     vm_id_start: 500                        # L'ID de la première VM créée
