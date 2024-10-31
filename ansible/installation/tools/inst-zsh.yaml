@@ -1,12 +1,56 @@
 ---
-- name: Install zsh
-  hosts: all
-  become: true
-
+- name: Install Oh My Zsh with Dracula theme on macOS
+  hosts: localhost
+  become: yes
   tasks:
-    - name: Install zsh
-      ansible.builtin.apt:
+
+    - name: Ensure Command Line Tools are installed
+      shell: xcode-select --install || echo "Command Line Tools already installed"
+      register: xcode_select
+      changed_when: false
+
+    - name: Install Homebrew if not present
+      command: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      args:
+        creates: /opt/homebrew/bin/brew
+      register: homebrew_install
+      changed_when: "'already installed' not in homebrew_install.stdout"
+
+    - name: Install Zsh
+      brew:
         name: zsh
         state: present
-        update_cache: true
-      become: true
+
+    - name: Change default shell to Zsh
+      shell: chsh -s $(which zsh)
+      register: change_shell
+      changed_when: false
+
+    - name: Install Oh My Zsh
+      shell: sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || echo "Oh My Zsh already installed"
+      args:
+        creates: "{{ ansible_env.HOME }}/.oh-my-zsh"
+      register: oh_my_zsh_install
+      changed_when: "'already installed' not in oh_my_zsh_install.stdout"
+
+    - name: Clone Dracula theme for Zsh
+      git:
+        repo: 'https://github.com/dracula/zsh.git'
+        dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/themes/dracula"
+        update: no
+
+    - name: Ensure .zshrc exists
+      file:
+        path: "{{ ansible_env.HOME }}/.zshrc"
+        state: touch
+
+    - name: Configure Dracula theme in .zshrc
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.zshrc"
+        regexp: '^ZSH_THEME='
+        line: 'ZSH_THEME="dracula/dracula"'
+        create: yes
+
+    - name: Source .zshrc
+      shell: source {{ ansible_env.HOME }}/.zshrc
+      changed_when: false
