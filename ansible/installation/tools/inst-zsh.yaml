@@ -1,54 +1,28 @@
 ---
-- name: Install Oh My Zsh with Dracula theme on Ubuntu
-  hosts: all
-  become: yes
+- hosts: all
+
+  vars:
+    - zsh_dependencies: []
   tasks:
-
-    - name: Update apt package list
+    - name: Ensure Zsh with dependencies are installed
       apt:
-        update_cache: yes
-
-    - name: Install Zsh
-      apt:
-        name: zsh
+        name: "{{ ['zsh'] + zsh_dependencies }}"
         state: present
-
-    - name: Change default shell to Zsh for the user
+        update_cache: yes
+      become: true
+      
+    - name: Ensure zsh is the default shell
       user:
         name: "{{ ansible_user }}"
-        shell: /usr/bin/zsh
+        shell: "/usr/bin/zsh"
+      become: true
 
-    - name: Create Zsh startup files to avoid configuration prompt
-      file:
-        path: "{{ item }}"
-        state: touch
-      loop:
-        - "{{ ansible_env.HOME }}/.zshrc"
-        - "{{ ansible_env.HOME }}/.zprofile"
-        - "{{ ansible_env.HOME }}/.zlogin"
-        - "{{ ansible_env.HOME }}/.zlogout"
-        - "{{ ansible_env.HOME }}/.zshenv"
+    - name: Download Oh My Zsh installation script
+      get_url:
+        url: https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
+        dest: /tmp/install_ohmyzsh.sh
 
-    - name: Install Oh My Zsh
-      shell: sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || echo "Oh My Zsh already installed"
-      args:
-        creates: "{{ ansible_env.HOME }}/.oh-my-zsh"
-      register: oh_my_zsh_install
-      changed_when: "'already installed' not in oh_my_zsh_install.stdout"
-
-    - name: Clone Dracula theme for Zsh
-      git:
-        repo: 'https://github.com/dracula/zsh.git'
-        dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/themes/dracula"
-        update: no
-
-    - name: Configure Dracula theme in .zshrc
-      lineinfile:
-        path: "{{ ansible_env.HOME }}/.zshrc"
-        regexp: '^ZSH_THEME='
-        line: 'ZSH_THEME="dracula/dracula"'
-        create: yes
-
-    - name: Source .zshrc
-      shell: zsh -c "source {{ ansible_env.HOME }}/.zshrc"
-      changed_when: false
+    - name: Run Oh My Zsh installation script
+      command: sh /tmp/install_ohmyzsh.sh --unattended
+      register: ohmyzsh_result
+      failed_when: "'FAILED' in ohmyzsh_result.stderr"
