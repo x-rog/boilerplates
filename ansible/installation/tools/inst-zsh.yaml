@@ -1,6 +1,6 @@
 ---
 - name: Install Oh My Zsh with Dracula theme on macOS
-  hosts: localhost
+  hosts: all
   become: yes
   tasks:
 
