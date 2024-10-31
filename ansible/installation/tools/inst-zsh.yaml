@@ -1,6 +1,6 @@
 ---
 - name: Install Oh My Zsh with Dracula theme on Ubuntu
-  hosts: all
+  hosts: ubuntu_servers
   become: yes
   tasks:
 
@@ -44,5 +44,5 @@
         create: yes
 
     - name: Source .zshrc
-      shell: source {{ ansible_env.HOME }}/.zshrc
+      shell: zsh -c "source {{ ansible_env.HOME }}/.zshrc"
       changed_when: false
