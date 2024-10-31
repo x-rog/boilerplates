@@ -1,6 +1,6 @@
 ---
 - name: Install Oh My Zsh with Dracula theme on Ubuntu
-  hosts: all
+  hosts: ubuntu_servers
   become: yes
   tasks:
 
