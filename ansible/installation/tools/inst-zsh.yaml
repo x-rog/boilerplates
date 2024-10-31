@@ -2,7 +2,8 @@
 - hosts: all
 
   vars:
-    - zsh_dependencies: []
+    zsh_dependencies: []
+
   tasks:
     - name: Ensure Zsh with dependencies are installed
       apt:
