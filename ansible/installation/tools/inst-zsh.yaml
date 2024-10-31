@@ -18,6 +18,17 @@
         name: "{{ ansible_user }}"
         shell: /usr/bin/zsh
 
+    - name: Create Zsh startup files to avoid configuration prompt
+      file:
+        path: "{{ item }}"
+        state: touch
+      loop:
+        - "{{ ansible_env.HOME }}/.zshrc"
+        - "{{ ansible_env.HOME }}/.zprofile"
+        - "{{ ansible_env.HOME }}/.zlogin"
+        - "{{ ansible_env.HOME }}/.zlogout"
+        - "{{ ansible_env.HOME }}/.zshenv"
+
     - name: Install Oh My Zsh
       shell: sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || echo "Oh My Zsh already installed"
       args:
@@ -30,11 +41,6 @@
         repo: 'https://github.com/dracula/zsh.git'
         dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/themes/dracula"
         update: no
-
-    - name: Ensure .zshrc exists
-      file:
-        path: "{{ ansible_env.HOME }}/.zshrc"
-        state: touch
 
     - name: Configure Dracula theme in .zshrc
       lineinfile:
