@@ -9,7 +9,7 @@
 
 # Install oh-my-zsh.
 - name: "OMZ | include oh-my-zsh.yaml tasks."
-  include_tasks: oh-my-zsh-install.ayaml
+  include_tasks: oh-my-zsh-install.yaml
   tags:
     - "oh-my-zsh"
     - "install"
