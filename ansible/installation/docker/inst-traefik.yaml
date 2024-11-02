@@ -1,12 +1,12 @@
 ---
-- name: Deploy traefik v3
+- name: Deploy traefik v2.5
   hosts: all
 
   tasks:
     - name: Deploy traefik
       community.docker.docker_container:
         name: traefik
-        image: "traefik:latest
+        image: "traefik:v2.5
         ports:
           - "80:80"
           - "443:443"
