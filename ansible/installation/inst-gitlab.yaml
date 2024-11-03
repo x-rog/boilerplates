@@ -1,0 +1,32 @@
+- hosts: gitlab-server
+  become: yes
+  tasks:
+    - name: Mettre à jour le système
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Installer les dépendances requises
+      apt:
+        name: 
+          - curl
+          - openssh-server
+          - ca-certificates
+          - tzdata
+        state: present
+
+    - name: Ajouter le dépôt GitLab
+      shell: curl -sS https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh | bash
+
+    - name: Installer GitLab
+      apt:
+        name: gitlab-ee
+        state: present
+      environment:
+        EXTERNAL_URL: "http://gitlab.home.macloudconnect.com"  # Remplacez par votre propre domaine
+
+    - name: Configurer GitLab
+      command: gitlab-ctl reconfigure
+
+    - name: Vérifier le statut de GitLab
+      command: gitlab-ctl status
