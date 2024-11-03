@@ -1,45 +1,52 @@
 - hosts: master
   become: yes
   tasks:
-    - name: create an empty file for Kubeadm configuring
+    - name: create an empty file for Kubeadm configuration if not exists
       copy:
         content: ""
         dest: /etc/kubernetes/kubeadm-config.yaml
         force: no
 
-    - name: configuring the container runtime including its cgroup driver
+    - name: configure the container runtime including its cgroup driver
       blockinfile:
         path: /etc/kubernetes/kubeadm-config.yaml
+        create: yes
         block: |
-             kind: ClusterConfiguration
-             apiVersion: kubeadm.k8s.io/v1beta3
-             networking:
-               podSubnet: "10.244.0.0/16"
-             ---
-             kind: KubeletConfiguration
-             apiVersion: kubelet.config.k8s.io/v1beta1
-             runtimeRequestTimeout: "15m"
-             cgroupDriver: "systemd"
-             systemReserved:
-               cpu: 100m
-               memory: 350M
-             kubeReserved:
-               cpu: 100m
-               memory: 50M
-             enforceNodeAllocatable:
-             - pods
+          kind: ClusterConfiguration
+          apiVersion: kubeadm.k8s.io/v1beta3
+          networking:
+            podSubnet: "10.244.0.0/16"
+          ---
+          kind: KubeletConfiguration
+          apiVersion: kubelet.config.k8s.io/v1beta1
+          runtimeRequestTimeout: "15m"
+          cgroupDriver: "systemd"
+          systemReserved:
+            cpu: 100m
+            memory: 350M
+          kubeReserved:
+            cpu: 100m
+            memory: 50M
+          enforceNodeAllocatable:
+            - pods
+
+    - name: check available versions of kubeadm
+      shell: apt-cache madison kubeadm | grep -m 1 '1.28'
+      register: kubeadm_version
+      changed_when: false
 
     - name: initialize the cluster (this could take some time)
       shell: kubeadm init --config /etc/kubernetes/kubeadm-config.yaml >> cluster_initialized.log
       args:
         chdir: /home/ubuntu
         creates: cluster_initialized.log
+      when: kubeadm_version.stdout != ''
 
     - name: create .kube directory
       become: yes
       become_user: ubuntu
       file:
-        path: $HOME/.kube
+        path: /home/ubuntu/.kube
         state: directory
         mode: 0755
 
@@ -49,11 +56,18 @@
         dest: /home/ubuntu/.kube/config
         remote_src: yes
         owner: ubuntu
+        mode: '0644'
 
     - name: install Pod network
       become: yes
       become_user: ubuntu
       shell: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml >> pod_network_setup.log
       args:
-        chdir: $HOME
+        chdir: /home/ubuntu
         creates: pod_network_setup.log
+
+    - name: install Kubectl
+      apt:
+        name: kubectl=1.28.*
+        state: present
+        force: yes  # allow downgrades
