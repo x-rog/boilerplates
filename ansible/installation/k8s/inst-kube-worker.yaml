@@ -1,24 +1,41 @@
-- hosts: master
-  become: yes
-  tasks:
-    - name: get join command
-      shell: kubeadm token create --print-join-command
-      register: join_command_raw
-
-    - name: set join command
-      set_fact:
-        join_command: "{{ join_command_raw.stdout_lines[0] }}"
-
 - hosts: worker
   become: yes
-  vars:
-    master_ip: "{{ hostvars['k8s-master-1']['ansible_host'] }}"
   tasks:
-    - name: TCP port 6443 on master is reachable from worker
-      wait_for: "host={{ master_ip }} port=6443 timeout=30"
+    - name: ensure Kubernetes sysctl params file exists
+      copy:
+        dest: /etc/sysctl.d/99-kubernetes-cri.conf
+        content: ''
+        force: no
 
-    - name: join cluster
-      shell: "{{ hostvars['k8s-master-1'].join_command }} >> node_joined.log"
+    - name: configure sysctl params for Kubernetes
+      blockinfile:
+        path: /etc/sysctl.d/99-kubernetes-cri.conf
+        create: yes
+        block: |
+          net.bridge.bridge-nf-call-iptables  = 1
+          net.ipv4.ip_forward                 = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+
+    - name: apply sysctl params without reboot
+      command: sysctl --system
+
+    - name: configure crictl endpoint
+      block:
+        - name: create /etc/crictl directory
+          file:
+            path: /etc/crictl
+            state: directory
+            mode: '0755'
+
+        - name: configure crictl to use containerd endpoint
+          copy:
+            content: "runtime-endpoint: unix:///run/containerd/containerd.sock\n"
+            dest: /etc/crictl/crictl.yaml
+            owner: root
+            group: root
+            mode: '0644'
+
+    - name: join the cluster (use the token and control plane IP from the master)
+      shell: kubeadm join <MASTER_IP>:6443 --token <TOKEN> --discovery-token-ca-cert-hash sha256:<HASH>
       args:
-        chdir: /home/ubuntu
-        creates: node_joined.log
+        creates: /var/lib/kubelet/kubeadm-flags.env
