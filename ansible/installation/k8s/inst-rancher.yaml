@@ -1,6 +1,11 @@
 - hosts: master
   become: yes
   tasks:
+    - name: Ensure KUBECONFIG is set for kubectl
+      shell: export KUBECONFIG=/etc/kubernetes/admin.conf
+      args:
+        executable: /bin/bash
+
     - name: Create namespace for Rancher
       shell: kubectl create namespace cattle-system --dry-run=client -o yaml | kubectl apply -f -
 
