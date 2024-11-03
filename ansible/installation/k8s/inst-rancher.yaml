@@ -80,7 +80,7 @@
       shell: |
         helm upgrade --install rancher rancher-stable/rancher \
           --namespace cattle-system \
-          --set hostname=home.macloudconnect.com \
+          --set hostname=rancher.home.macloudconnect.com \
           --set replicas=3
       args:
         creates: /tmp/rancher-installed
@@ -98,4 +98,4 @@
 
     - name: Display Rancher URL
       debug:
-        msg: "Rancher is deployed and accessible at https://home.macloudconnect.com"
+        msg: "Rancher is deployed and accessible at https://rancher.home.macloudconnect.com"
