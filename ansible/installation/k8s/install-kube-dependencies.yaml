@@ -2,7 +2,7 @@
   become: yes
   tasks:
     - fail:
-       msg: "OS should be Ubuntu 24.04, not {{ ansible_distribution }} {{ ansible_distribution_version }}"
+        msg: "OS should be Ubuntu 24.04, not {{ ansible_distribution }} {{ ansible_distribution_version }}"
       when: ansible_distribution != 'Ubuntu' or ansible_distribution_version != '24.04'
 
     - name: update APT packages
@@ -22,11 +22,10 @@
         regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
         replace: '# \1'
 
-    - name: create an empty file for the Containerd module
-      copy:
-        content: ""
-        dest: /etc/modules-load.d/containerd.conf
-        force: no
+    - name: create an empty file for the Containerd module if not exists
+      file:
+        path: /etc/modules-load.d/containerd.conf
+        state: touch
 
     - name: configure modules for Containerd
       blockinfile:
@@ -35,11 +34,10 @@
              overlay
              br_netfilter
 
-    - name: create an empty file for Kubernetes sysctl params
-      copy:
-        content: ""
-        dest: /etc/sysctl.d/99-kubernetes-cri.conf
-        force: no
+    - name: create an empty file for Kubernetes sysctl params if not exists
+      file:
+        path: /etc/sysctl.d/99-kubernetes-cri.conf
+        state: touch
 
     - name: configure sysctl params for Kubernetes
       lineinfile:
@@ -151,4 +149,4 @@
       apt:
         name: kubectl=1.29.*
         state: present
-        force: yes # allow downgrades
+        force: yes  # allow downgrades
