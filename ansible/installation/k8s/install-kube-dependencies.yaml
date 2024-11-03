@@ -99,21 +99,34 @@
         path: /etc/containerd
         state: directory
 
-    - name: add Containerd configuration
+    - name: enable the Containerd service and start it
+      systemd:
+        name: containerd
+        state: started
+        enabled: yes
+        daemon-reload: yes
+
+    - name: check if Containerd configuration exists
+      stat:
+        path: /etc/containerd/config.toml
+      register: containerd_config
+
+    - name: add Containerd configuration if not present
       shell: /usr/bin/containerd config default > /etc/containerd/config.toml
+      when: not containerd_config.stat.exists
 
     - name: configuring the systemd cgroup driver for Containerd
       lineinfile:
         path: /etc/containerd/config.toml
         regexp: '            SystemdCgroup = false'
         line: '            SystemdCgroup = true'
+      when: containerd_config.stat.exists
 
-    - name: enable the Containerd service and start it
+    - name: enable the Containerd service and restart it
       systemd:
         name: containerd
         state: restarted
         enabled: yes
-        daemon-reload: yes
 
     - name: install Kubelet
       apt:
