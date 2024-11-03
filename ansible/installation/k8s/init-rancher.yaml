@@ -1,0 +1,59 @@
+- hosts: master
+  become: yes
+  tasks:
+    - name: Create namespace for Rancher
+      shell: kubectl create namespace cattle-system --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Add Helm repo for Rancher
+      shell: helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+      args:
+        creates: /tmp/rancher-repo-added
+
+    - name: Update Helm repos
+      shell: helm repo update
+      args:
+        creates: /tmp/helm-repo-updated
+
+    - name: Install cert-manager CRDs
+      shell: kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.crds.yaml
+      args:
+        creates: /tmp/cert-manager-crds-installed
+
+    - name: Create namespace for cert-manager
+      shell: kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Install cert-manager using Helm
+      shell: |
+        helm upgrade --install cert-manager jetstack/cert-manager \
+          --namespace cert-manager \
+          --version v1.12.0 \
+          --set installCRDs=true
+      args:
+        creates: /tmp/cert-manager-installed
+
+    - name: Wait for cert-manager to be ready
+      shell: kubectl rollout status deploy/cert-manager -n cert-manager --timeout=2m
+      retries: 5
+      delay: 30
+      register: cert_manager_status
+      until: cert_manager_status.rc == 0
+
+    - name: Install Rancher using Helm
+      shell: |
+        helm upgrade --install rancher rancher-stable/rancher \
+          --namespace cattle-system \
+          --set hostname=rancher.home.macloudconnect.com \
+          --set replicas=3
+      args:
+        creates: /tmp/rancher-installed
+
+    - name: Wait for Rancher to be ready
+      shell: kubectl rollout status deploy/rancher -n cattle-system --timeout=5m
+      retries: 10
+      delay: 60
+      register: rancher_status
+      until: rancher_status.rc == 0
+
+    - name: Display Rancher URL
+      debug:
+        msg: "Rancher is deployed and accessible at https://rancher.home.macloudconnect.com"
