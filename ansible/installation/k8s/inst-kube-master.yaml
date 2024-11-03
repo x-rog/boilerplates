@@ -42,6 +42,11 @@
         creates: cluster_initialized.log
       when: kubeadm_version.stdout != ''
 
+    - name: wait for admin.conf to be created
+      wait_for:
+        path: /etc/kubernetes/admin.conf
+        timeout: 60
+
     - name: create .kube directory
       file:
         path: /home/ubuntu/.kube
@@ -61,12 +66,11 @@
         mode: '0644'
 
     - name: install Pod network
-      shell: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml >> pod_network_setup.log
+      shell: sudo -u ubuntu kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml >> pod_network_setup.log
       args:
         chdir: /home/ubuntu
         creates: pod_network_setup.log
       become: yes
-      become_user: ubuntu
 
     - name: install Kubectl
       apt:
