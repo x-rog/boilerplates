@@ -60,7 +60,8 @@
         helm upgrade --install cert-manager jetstack/cert-manager \
           --namespace cert-manager \
           --version v1.12.0 \
-          --set installCRDs=true
+          --set installCRDs=false \
+          --force
       args:
         creates: /tmp/cert-manager-installed
       environment:
