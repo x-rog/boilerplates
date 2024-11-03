@@ -136,7 +136,7 @@
 
     - name: install Kubeadm
       apt:
-        name: kubeadm=1.29.*
+        name: kubeadm=1.28.*
         state: present
 
     - name: enable the Kubelet service, and enable it persistently
@@ -167,6 +167,6 @@
   tasks:
     - name: install Kubectl
       apt:
-        name: kubectl=1.29.*
+        name: kubectl=1.28.*
         state: present
         force: yes  # allow downgrades
