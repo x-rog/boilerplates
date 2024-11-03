@@ -30,6 +30,22 @@
           enforceNodeAllocatable:
             - pods
 
+    - name: configure crictl endpoint
+      block:
+        - name: create /etc/crictl directory
+          file:
+            path: /etc/crictl
+            state: directory
+            mode: '0755'
+
+        - name: configure crictl to use containerd endpoint
+          copy:
+            content: "runtime-endpoint: unix:///run/containerd/containerd.sock\n"
+            dest: /etc/crictl/crictl.yaml
+            owner: root
+            group: root
+            mode: '0644'
+
     - name: check available versions of kubeadm
       shell: apt-cache madison kubeadm | grep -m 1 '1.28'
       register: kubeadm_version
