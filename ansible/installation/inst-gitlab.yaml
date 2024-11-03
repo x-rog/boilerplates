@@ -15,8 +15,15 @@
           - tzdata
         state: present
 
-    - name: Ajouter le dépôt GitLab
-      shell: curl -sS https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh | bash
+    - name: Ajouter la clé GPG de GitLab
+      apt_key:
+        url: https://packages.gitlab.com/gitlab/gitlab-ee/gpgkey
+        state: present
+
+    - name: Ajouter le dépôt GitLab manuellement
+      apt_repository:
+        repo: "deb https://packages.gitlab.com/gitlab/gitlab-ee/ubuntu/ focal main"
+        state: present
 
     - name: Mettre à jour le cache APT après l'ajout du dépôt
       apt:
