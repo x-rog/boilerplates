@@ -29,6 +29,13 @@
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
 
+    - name: Add Helm repo for cert-manager
+      shell: helm repo add jetstack https://charts.jetstack.io
+      args:
+        creates: /tmp/jetstack-repo-added
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
     - name: Update Helm repos
       shell: helm repo update
       args:
