@@ -18,6 +18,10 @@
     - name: Ajouter le dépôt GitLab
       shell: curl -sS https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh | bash
 
+    - name: Mettre à jour le cache APT après l'ajout du dépôt
+      apt:
+        update_cache: yes
+
     - name: Installer GitLab
       apt:
         name: gitlab-ee
