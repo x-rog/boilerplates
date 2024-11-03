@@ -43,12 +43,14 @@
       when: kubeadm_version.stdout != ''
 
     - name: create .kube directory
-      become: yes
-      become_user: ubuntu
       file:
         path: /home/ubuntu/.kube
         state: directory
-        mode: 0755
+        mode: '0755'
+
+    - name: change ownership of .kube directory
+      command: chown -R ubuntu:ubuntu /home/ubuntu/.kube
+      become: yes
 
     - name: copy admin.conf to user's kube config
       copy:
@@ -59,12 +61,12 @@
         mode: '0644'
 
     - name: install Pod network
-      become: yes
-      become_user: ubuntu
       shell: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml >> pod_network_setup.log
       args:
         chdir: /home/ubuntu
         creates: pod_network_setup.log
+      become: yes
+      become_user: ubuntu
 
     - name: install Kubectl
       apt:
