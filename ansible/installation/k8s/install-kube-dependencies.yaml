@@ -85,9 +85,13 @@
         state: present
         update_cache: yes
 
+    - name: update APT cache before installing Containerd
+      apt:
+        update_cache: yes
+
     - name: install Containerd
       apt:
-        name: containerd.io
+        name: containerd
         state: present
 
     - name: create Containerd directory
