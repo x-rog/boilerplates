@@ -22,31 +22,34 @@
         regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
         replace: '# \1'
 
-    - name: create an empty file for the Containerd module if not exists
-      file:
-        path: /etc/modules-load.d/containerd.conf
-        state: touch
+    - name: ensure Containerd module file exists
+      copy:
+        dest: /etc/modules-load.d/containerd.conf
+        content: ''
+        force: no
 
     - name: configure modules for Containerd
       blockinfile:
         path: /etc/modules-load.d/containerd.conf
+        create: yes
         block: |
              overlay
              br_netfilter
 
-    - name: create an empty file for Kubernetes sysctl params if not exists
-      file:
-        path: /etc/sysctl.d/99-kubernetes-cri.conf
-        state: touch
+    - name: ensure Kubernetes sysctl params file exists
+      copy:
+        dest: /etc/sysctl.d/99-kubernetes-cri.conf
+        content: ''
+        force: no
 
     - name: configure sysctl params for Kubernetes
-      lineinfile:
+      blockinfile:
         path: /etc/sysctl.d/99-kubernetes-cri.conf
-        line: "{{ item }}"
-      with_items:
-        - 'net.bridge.bridge-nf-call-iptables  = 1'
-        - 'net.ipv4.ip_forward                 = 1'
-        - 'net.bridge.bridge-nf-call-ip6tables = 1'
+        create: yes
+        block: |
+          net.bridge.bridge-nf-call-iptables  = 1
+          net.ipv4.ip_forward                 = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
 
     - name: apply sysctl params without reboot
       command: sysctl --system
